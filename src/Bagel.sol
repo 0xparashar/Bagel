@@ -8,6 +8,8 @@ import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/Sa
 import { ISovereignALM, ALMLiquidityQuoteInput, ALMLiquidityQuote } from "valantis-core/ALM/interfaces/ISovereignALM.sol";
 import { ISovereignPool } from "valantis-core/pools/interfaces/ISovereignPool.sol";
 
+import { console } from "forge-std/console.sol";
+
 contract Bagel is ERC20, ISovereignALM {
     using SafeERC20 for IERC20;
 
@@ -121,22 +123,22 @@ contract Bagel is ERC20, ISovereignALM {
         uint256 reserveOut;
         if(_almLiquidityQuoteInput.isZeroToOne){
 
-            if(Math.mulDiv(reserve1, 1<<128, reserve0) < Math.mulDiv(lastReserve1Cache, 1<<128, lastReserve0Cache)){
+            if(Math.mulDiv(reserve1, 1<<128, reserve0) > Math.mulDiv(lastReserve1Cache, 1<<128, lastReserve0Cache)){
                 // new p < p initial for zero to one swap
                 // meaning first part of sandwich transaction happened
                 // so take reserves such that current p = p initial
-                reserve0 = Math.mulDiv(lastReserve0Cache, reserve1, lastReserve1Cache);
+                reserve1 = Math.mulDiv(lastReserve1Cache, reserve0, lastReserve0Cache);
             }            
 
             reserveIn = reserve0;
             reserveOut = reserve1;
         }else{
 
-            if(Math.mulDiv(reserve1, 1<<128, reserve0) > Math.mulDiv(lastReserve1Cache, 1<<128, lastReserve0Cache)){
+            if(Math.mulDiv(reserve1, 1<<128, reserve0) < Math.mulDiv(lastReserve1Cache, 1<<128, lastReserve0Cache)){
                 // new p > p initial for one to zero swap
                 // meaning first part of sandwich transaction happened
                 // so take reserves such that current p = p initial
-                reserve1 = Math.mulDiv(lastReserve1Cache, reserve0, lastReserve0Cache);
+                reserve0 = Math.mulDiv(lastReserve0Cache, reserve1, lastReserve1Cache);
             }
 
             reserveIn = reserve1;
@@ -144,7 +146,7 @@ contract Bagel is ERC20, ISovereignALM {
         }
         
         quote.amountInFilled = _almLiquidityQuoteInput.amountInMinusFee;
-        quote.amountOut = Math.mulDiv(reserveIn, reserveOut, reserveIn + _almLiquidityQuoteInput.amountInMinusFee);
+        quote.amountOut = reserveOut - Math.mulDiv(reserveIn, reserveOut, reserveIn + _almLiquidityQuoteInput.amountInMinusFee);
     }
 
     function onDepositLiquidityCallback(uint256 _amount0, uint256 _amount1, bytes memory _data) external override onlyPool {
