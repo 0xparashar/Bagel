@@ -20,7 +20,6 @@ contract Bagel is ERC20, ISovereignALM {
     error Bagel_withdraw__insufficientToken0Withdrawn();
     error Bagel_withdraw__insufficientToken1Withdrawn();
 
-    // sqrt(reserve1/reserve0 * Q128) and 
     uint112 public lastReserve0;
     uint112 public lastReserve1;
     uint32 public lastBlockUpdate;
@@ -49,7 +48,6 @@ contract Bagel is ERC20, ISovereignALM {
 
         uint256 totalSupplyCache = totalSupply();
 
-        // First deposit must be donated directly to the pool
         if (totalSupplyCache == 0) {
 
             _mint(address(1), MINIMUM_LIQUIDITY);
@@ -128,7 +126,7 @@ contract Bagel is ERC20, ISovereignALM {
         if(_almLiquidityQuoteInput.isZeroToOne){
 
             if(Math.mulDiv(reserve1, 1<<128, reserve0) > Math.mulDiv(lastReserve1Cache, 1<<128, lastReserve0Cache)){
-                // new p < p initial for zero to one swap
+                // new p > p initial for zero to one swap
                 // meaning first part of sandwich transaction happened
                 // so take reserves such that current p = p initial
                 reserve1 = Math.mulDiv(lastReserve1Cache, reserve0, lastReserve0Cache);
@@ -139,7 +137,7 @@ contract Bagel is ERC20, ISovereignALM {
         }else{
 
             if(Math.mulDiv(reserve1, 1<<128, reserve0) < Math.mulDiv(lastReserve1Cache, 1<<128, lastReserve0Cache)){
-                // new p > p initial for one to zero swap
+                // new p < p initial for one to zero swap
                 // meaning first part of sandwich transaction happened
                 // so take reserves such that current p = p initial
                 reserve0 = Math.mulDiv(lastReserve0Cache, reserve1, lastReserve1Cache);
