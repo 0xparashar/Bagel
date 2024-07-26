@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
+import { SafeCast } from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import { Math } from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import { ERC20 } from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
@@ -8,14 +9,13 @@ import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/Sa
 import { ISovereignALM, ALMLiquidityQuoteInput, ALMLiquidityQuote } from "valantis-core/ALM/interfaces/ISovereignALM.sol";
 import { ISovereignPool } from "valantis-core/pools/interfaces/ISovereignPool.sol";
 
-import { console } from "forge-std/console.sol";
-
 contract Bagel is ERC20, ISovereignALM {
     using SafeERC20 for IERC20;
 
 
     error Bagel_onlyPool();
     error Bagel_deposit__insufficientTokenDeposited();
+    error Bagel_deposit__zeroShares();
     error Bagel_withdraw__bothAmountsZero();
     error Bagel_withdraw__insufficientToken0Withdrawn();
     error Bagel_withdraw__insufficientToken1Withdrawn();
@@ -64,14 +64,18 @@ contract Bagel is ERC20, ISovereignALM {
             uint256 shares1 = Math.mulDiv(_amount1, totalSupplyCache, reserve1);
 
             if(shares0 < shares1){
-                _amount1 = Math.mulDiv(shares0, totalSupplyCache, reserve1);
+                _amount1 = Math.mulDiv(shares0, totalSupplyCache, reserve1, Math.Rounding.Ceil);
                 shares = shares0;
             } else {
-                _amount0 = Math.mulDiv(shares1, totalSupplyCache, reserve0);
+                _amount0 = Math.mulDiv(shares1, totalSupplyCache, reserve0, Math.Rounding.Ceil);
                 shares = shares1;
             }    
 
             if (shares < _minShares) revert Bagel_deposit__insufficientTokenDeposited();
+        }
+
+        if(shares == 0){
+            revert Bagel_deposit__zeroShares();
         }
 
         _mint(msg.sender, shares);
@@ -113,8 +117,8 @@ contract Bagel is ERC20, ISovereignALM {
         
         if(lastBlockUpdate != uint32(block.number)){
             lastBlockUpdate = uint32(block.number);
-            lastReserve0 = uint112(reserve0);
-            lastReserve1 = uint112(reserve1);
+            lastReserve0 = SafeCast.toUint112(reserve0);
+            lastReserve1 = SafeCast.toUint112(reserve1);
         }
 
         uint256 lastReserve0Cache = lastReserve0;
@@ -146,7 +150,7 @@ contract Bagel is ERC20, ISovereignALM {
         }
         
         quote.amountInFilled = _almLiquidityQuoteInput.amountInMinusFee;
-        quote.amountOut = reserveOut - Math.mulDiv(reserveIn, reserveOut, reserveIn + _almLiquidityQuoteInput.amountInMinusFee);
+        quote.amountOut = Math.mulDiv(reserveOut, _almLiquidityQuoteInput.amountInMinusFee, reserveIn + _almLiquidityQuoteInput.amountInMinusFee);
     }
 
     function onDepositLiquidityCallback(uint256 _amount0, uint256 _amount1, bytes memory _data) external override onlyPool {
