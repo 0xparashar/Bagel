@@ -63,7 +63,8 @@ contract Bagel is ERC20, ISovereignALM {
         uint256 _amount1,
         uint256 _minShares,
         uint256 _deadline,
-        address _recipient
+        address _recipient,
+        bytes memory _verificationContext
     ) external returns (uint256 shares) {
         _checkDeadline(_deadline);
 
@@ -112,7 +113,7 @@ contract Bagel is ERC20, ISovereignALM {
             _amount0,
             _amount1,
             msg.sender,
-            "",
+            _verificationContext,
             abi.encode(msg.sender)
         );
     }
@@ -121,7 +122,9 @@ contract Bagel is ERC20, ISovereignALM {
         uint256 _shares,
         uint256 _amount0Min,
         uint256 _amount1Min,
-        uint256 _deadline
+        uint256 _deadline,
+        address _recipient,
+        bytes memory _verificationContext
     ) external returns (uint256 amount0, uint256 amount1) {
         _checkDeadline(_deadline);
 
@@ -141,13 +144,19 @@ contract Bagel is ERC20, ISovereignALM {
 
         _burn(msg.sender, _shares);
 
-        pool.withdrawLiquidity(amount0, amount1, msg.sender, msg.sender, "");
+        pool.withdrawLiquidity(
+            amount0,
+            amount1,
+            msg.sender,
+            _recipient,
+            _verificationContext
+        );
     }
 
     function getLiquidityQuote(
         ALMLiquidityQuoteInput memory _almLiquidityQuoteInput,
-        bytes calldata,
-        bytes calldata
+        bytes calldata /*_externalContext*/,
+        bytes calldata /*_verifierData*/
     ) external override onlyPool returns (ALMLiquidityQuote memory quote) {
         (uint256 reserve0, uint256 reserve1) = _getReserves();
 
@@ -229,7 +238,7 @@ contract Bagel is ERC20, ISovereignALM {
         uint256 /*_amountOut*/
     ) external override {}
 
-    function _getReserves() internal view returns (uint256, uint256) {
+    function _getReserves() private view returns (uint256, uint256) {
         return pool.getReserves();
     }
 
