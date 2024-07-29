@@ -18,6 +18,7 @@ contract Bagel is ERC20, ISovereignALM {
     error Bagel_deadlineExpired();
     error Bagel_onlyPool();
     error Bagel_deposit__insufficientTokenDeposited();
+    error Bagel_deposit_invalidRecipient();
     error Bagel_deposit__zeroShares();
     error Bagel_withdraw__bothAmountsZero();
     error Bagel_withdraw__insufficientToken0Withdrawn();
@@ -223,9 +224,9 @@ contract Bagel is ERC20, ISovereignALM {
     }
 
     function onSwapCallback(
-        bool _isZeroToOne,
-        uint256 _amountIn,
-        uint256 _amountOut
+        bool /*_isZeroToOne*/,
+        uint256 /*_amountIn*/,
+        uint256 /*_amountOut*/
     ) external override {}
 
     function _getReserves() internal view returns (uint256, uint256) {
