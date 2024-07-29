@@ -103,9 +103,7 @@ contract Bagel is ERC20, ISovereignALM {
         if (shares < _minShares)
             revert Bagel_deposit__insufficientTokenDeposited();
 
-        if (shares == 0) {
-            revert Bagel_deposit__zeroShares();
-        }
+        if (shares == 0) revert Bagel_deposit__zeroShares();
 
         _mint(_recipient, shares);
 
