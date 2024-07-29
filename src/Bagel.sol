@@ -64,7 +64,7 @@ contract Bagel is ERC20, ISovereignALM {
         uint256 _minShares,
         uint256 _deadline,
         address _recipient,
-        bytes memory _verificationContext
+        bytes calldata _verificationContext
     ) external returns (uint256 shares) {
         _checkDeadline(_deadline);
 
@@ -124,7 +124,7 @@ contract Bagel is ERC20, ISovereignALM {
         uint256 _amount1Min,
         uint256 _deadline,
         address _recipient,
-        bytes memory _verificationContext
+        bytes calldata _verificationContext
     ) external returns (uint256 amount0, uint256 amount1) {
         _checkDeadline(_deadline);
 
